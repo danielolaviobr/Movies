@@ -1,12 +1,16 @@
 import {useIsFocused} from '@react-navigation/native';
-import React, {useCallback, useEffect} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {ActivityIndicator, FlatList, View} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {v4 as uuid} from 'uuid';
 
 import Movie from '../../components/Movie';
 import {useFavorites} from '../../hooks/favorites';
-import {startLoading, updateCurrentPage} from '../../redux/actions';
+import {
+  completeLoading,
+  startLoading,
+  updateCurrentPage,
+} from '../../redux/actions';
 import {AppState} from '../../redux/reducers';
 import api from '../../services/api';
 import apiKey from '../../services/key';
@@ -15,7 +19,7 @@ import {Container, Footer, Header} from './styles';
 const Favorites: React.FC = () => {
   const dispatch = useDispatch();
   const isFocused = useIsFocused();
-  const [visibleMovies, setVisibleMovies] = useState();
+  const [visibleMovies, setVisibleMovies] = useState([]);
   const currentPageName = useSelector((state: AppState) => {
     return state.currentPage.page;
   });
@@ -26,16 +30,27 @@ const Favorites: React.FC = () => {
 
   const loadMovies = useCallback(async () => {
     const movies = await getFavorites();
-    const moviesData = movies.map(async (movie) => {
-      const response = await api.get(`/movie/${movie}?api_key=${apiKey}`);
-      const movieData = response.data;
-      return movieData;
+    console.log(movies);
+    const moviesDataPromise = movies.map(async (movie) => {
+      const response = api.get(`/movie/${movie}?api_key=${apiKey}`);
+      const movieData = await response;
+      return movieData.data;
+    });
+    let moviesData: React.SetStateAction<any[]>;
+    await Promise.all(moviesDataPromise).then((movies) => {
+      console.log(movies.map((mv) => mv.original_title));
+      moviesData = movies;
     });
     setVisibleMovies(moviesData);
+    dispatch(completeLoading());
   }, []);
 
   useEffect(() => {
     dispatch(startLoading());
+    loadMovies();
+  }, [getFavorites]);
+
+  useEffect(() => {
     loadMovies();
   }, []);
 
@@ -57,6 +72,10 @@ const Favorites: React.FC = () => {
 
   const listHeader = () => <Header>Favorites</Header>;
 
+  if (isLoading) {
+    return <ActivityIndicator style={{flex: 1}} />;
+  }
+
   return (
     <Container>
       <FlatList
@@ -65,7 +84,7 @@ const Favorites: React.FC = () => {
         }}
         data={visibleMovies}
         renderItem={movieComponent}
-        keyExtractor={(item) => `${item.id.toString()}${uuid()}`}
+        keyExtractor={() => uuid()}
         ListHeaderComponent={listHeader}
         onEndReachedThreshold={0.1}
         removeClippedSubviews={true}

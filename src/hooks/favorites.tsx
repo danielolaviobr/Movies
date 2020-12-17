@@ -11,7 +11,7 @@ interface FavoritesContextData {
   getFavorites(): Promise<string[]>;
   addToFavorites(id: string): Promise<void>;
   removeFromFavorites(id: string): Promise<void>;
-  isFavorited(id: string): boolean;
+  isFavorited(id: string): Promise<boolean>;
 }
 
 const FavoritesContext = createContext<FavoritesContextData>(
@@ -52,12 +52,13 @@ export const FavoritesProvider: React.FC = ({children}) => {
     [favorites],
   );
 
-  const isFavorited = useCallback(
-    (id: string) => {
-      return favorites.includes(id);
-    },
-    [favorites],
-  );
+  const isFavorited = useCallback(async (id: string) => {
+    const favoriteMoviesIdsString = await AsyncStorage.getItem(
+      '@Movies:favorites',
+    );
+    setFavorites(JSON.parse(favoriteMoviesIdsString));
+    return JSON.parse(favoriteMoviesIdsString).includes(id);
+  }, []);
 
   return (
     <FavoritesContext.Provider

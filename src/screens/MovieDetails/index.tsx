@@ -25,6 +25,7 @@ interface MovieDetailsProps {
 
 const MovieDetails: React.FC<MovieDetailsProps> = ({route}): JSX.Element => {
   const [movie, setMovie] = useState<any>({});
+  const [favorited, setFavorited] = useState(false);
   const dispatch = useDispatch();
   const {id} = route.params.params;
   const isLoading = useSelector((state: AppState) => {
@@ -39,9 +40,13 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({route}): JSX.Element => {
   } = useFavorites();
 
   const loadMovieData = useCallback(async () => {
+    await getFavorites();
     const response = await api.get(`/movie/${id}?api_key=${apiKey}`);
 
     const movieData = response.data;
+
+    const isMovieFavorited = await isFavorited(movieData.id);
+    setFavorited(isMovieFavorited);
     setMovie(movieData);
     dispatch(completeLoading());
   }, []);
@@ -67,10 +72,12 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({route}): JSX.Element => {
   }
 
   const handleFavoriteButtonPress = async () => {
-    if (isFavorited(movie.id)) {
+    if (favorited) {
       await removeFromFavorites(movie.id);
+      setFavorited(false);
     } else {
       await addToFavorites(movie.id);
+      setFavorited(true);
     }
   };
 
@@ -85,9 +92,7 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({route}): JSX.Element => {
         <MovieDescription>{movie.overview}</MovieDescription>
         <Button onPress={handleFavoriteButtonPress}>
           <ButtonText>
-            {isFavorited(movie.id)
-              ? 'Remove from Favorites'
-              : 'Save to Favorites'}
+            {favorited ? 'Remove from Favorites' : 'Save to Favorites'}
           </ButtonText>
         </Button>
       </MovieInfo>
