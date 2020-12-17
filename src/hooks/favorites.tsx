@@ -10,6 +10,8 @@ import AsyncStorage from '@react-native-community/async-storage';
 interface FavoritesContextData {
   getFavorites(): Promise<string[]>;
   addToFavorites(id: string): Promise<void>;
+  removeFromFavorites(id: string): Promise<void>;
+  isFavorited(id: string): boolean;
 }
 
 const FavoritesContext = createContext<FavoritesContextData>(
@@ -21,7 +23,8 @@ export const FavoritesProvider: React.FC = ({children}) => {
 
   const addToFavorites = useCallback(
     async (id: string) => {
-      setFavorites([...favorites, id]);
+      const newFavoritesSet = new Set([...favorites, id]);
+      setFavorites([...newFavoritesSet]);
       await AsyncStorage.setItem(
         '@Movies:favorites',
         JSON.stringify(favorites),
@@ -37,8 +40,28 @@ export const FavoritesProvider: React.FC = ({children}) => {
     return JSON.parse(favoriteMoviesIdsString);
   }, []);
 
+  const removeFromFavorites = useCallback(
+    async (id: string) => {
+      const filteredMovies = favorites.filter((movieID) => movieID !== id);
+      setFavorites([...filteredMovies]);
+      await AsyncStorage.setItem(
+        '@Movies:favorites',
+        JSON.stringify(favorites),
+      );
+    },
+    [favorites],
+  );
+
+  const isFavorited = useCallback(
+    (id: string) => {
+      return favorites.includes(id);
+    },
+    [favorites],
+  );
+
   return (
-    <FavoritesContext.Provider value={{getFavorites, addToFavorites}}>
+    <FavoritesContext.Provider
+      value={{getFavorites, addToFavorites, removeFromFavorites, isFavorited}}>
       {children}
     </FavoritesContext.Provider>
   );

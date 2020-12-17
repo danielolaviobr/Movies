@@ -56,6 +56,7 @@ const BottomNavBar: React.FC = () => {
   }, []);
 
   const handlePressFavorites = useCallback(() => {
+    navigate('Favorites');
     offset.value = withSpring(121);
     setActiveState({
       movie: false,

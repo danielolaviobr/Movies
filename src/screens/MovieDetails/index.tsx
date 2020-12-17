@@ -1,6 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {ActivityIndicator} from 'react-native';
-import Icons from 'react-native-vector-icons/Feather';
 import {useDispatch, useSelector} from 'react-redux';
 import {
   MovieInfo,
@@ -20,10 +19,6 @@ import Icon from 'react-native-vector-icons/Feather';
 import {useNavigation} from '@react-navigation/native';
 import {useFavorites} from '../../hooks/favorites';
 
-// interface Movie {
-//   original_title: string;
-// }
-
 interface MovieDetailsProps {
   route: any;
 }
@@ -36,7 +31,12 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({route}): JSX.Element => {
     return state.loading.isLoading;
   });
   const navigator = useNavigation();
-  const {addToFavorites, getFavorites} = useFavorites();
+  const {
+    addToFavorites,
+    isFavorited,
+    removeFromFavorites,
+    getFavorites,
+  } = useFavorites();
 
   const loadMovieData = useCallback(async () => {
     const response = await api.get(`/movie/${id}?api_key=${apiKey}`);
@@ -66,6 +66,14 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({route}): JSX.Element => {
     return <ActivityIndicator style={{flex: 1}} />;
   }
 
+  const handleFavoriteButtonPress = async () => {
+    if (isFavorited(movie.id)) {
+      await removeFromFavorites(movie.id);
+    } else {
+      await addToFavorites(movie.id);
+    }
+  };
+
   return (
     <Container>
       <MovieInfo>
@@ -75,13 +83,12 @@ const MovieDetails: React.FC<MovieDetailsProps> = ({route}): JSX.Element => {
         <Poster source={{uri: imageURI()}} />
         <Title>{movie.original_title}</Title>
         <MovieDescription>{movie.overview}</MovieDescription>
-        <Button
-          onPress={async () => {
-            await addToFavorites(movie.id);
-            const favs = await getFavorites();
-            console.log(favs);
-          }}>
-          <ButtonText>Save to Favorites</ButtonText>
+        <Button onPress={handleFavoriteButtonPress}>
+          <ButtonText>
+            {isFavorited(movie.id)
+              ? 'Remove from Favorites'
+              : 'Save to Favorites'}
+          </ButtonText>
         </Button>
       </MovieInfo>
     </Container>

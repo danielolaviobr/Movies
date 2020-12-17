@@ -84,7 +84,7 @@ const Search: React.FC = () => {
   );
 
   const loadingIndicatorFooter = () => {
-    if (isLoading) return null;
+    if (isLoading || !inputValue) return null;
     return (
       <Footer>
         <ActivityIndicator />
